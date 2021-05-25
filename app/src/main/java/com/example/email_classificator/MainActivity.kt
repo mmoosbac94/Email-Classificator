@@ -4,6 +4,7 @@ import android.accounts.AccountManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.example.email_classificator.Utils.Companion.PREF_ACCOUNT_NAME
@@ -17,9 +18,11 @@ import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.ExponentialBackOff
 import com.google.api.services.gmail.Gmail
 import com.google.api.services.gmail.GmailScopes
+import com.google.api.services.gmail.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.nio.charset.StandardCharsets
 
 
 class MainActivity : AppCompatActivity() {
@@ -79,13 +82,28 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val response = mService.users().messages().list("me").execute()
-            val messageList = response.messages
-            val message =
-                mService.users().messages().get("me", messageList[20].id).execute()
-            Log.i("Message-Snippet", message.snippet)
+            val messageListBase64 = response.messages
+            val messageList = messageListBase64.mapNotNull {
+                try {
+                    convertFromBase64ToString(
+                        mService.users().messages().get("me", it.id).execute()
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            messageList.forEach {
+                Log.i("Message", it)
+            }
+
         } catch (e: Exception) {
             Log.e("Error", e.toString())
         }
+    }
+
+    private fun convertFromBase64ToString(message: Message): String {
+        val data: ByteArray = Base64.decode(message.payload.parts[0].body.data, Base64.DEFAULT)
+        return String(data, StandardCharsets.UTF_8)
     }
 
     override fun onActivityResult(
