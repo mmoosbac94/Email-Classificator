@@ -13,6 +13,7 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.extensions.android.http.AndroidHttp
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import com.google.api.client.json.JsonFactory
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.client.util.ExponentialBackOff
@@ -22,6 +23,7 @@ import com.google.api.services.gmail.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.tensorflow.lite.task.text.nlclassifier.BertNLClassifier
 import java.nio.charset.StandardCharsets
 
 
@@ -42,6 +44,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        //Task library currently only support the default seq_len value (128)
+
+        //MaxSeqLen has been added to the Java/Swift(will be available tomorrow externally) API
+
+//        val test = BertNLClassifier.BertNLClassifierOptions.builder().setMaxSeqLen(512).build()
+//
+//        val classifier =
+//            BertNLClassifier.createFromFileAndOptions(applicationContext, "model.tflite", test)
+//
+//        val result =
+//            classifier.classify("Today is the winter celebration. We hope that many will take part and prepare beautiful presentations. We look forward to the coming year and the success of our company. Interviews are already prepared. We are expanding for next year and would like to increase the number of employees.")
+//        Log.i("RESULT", result.toString())
 
         init()
 
@@ -93,11 +108,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             messageList.forEach {
-                Log.i("Message", it)
+                Log.i("EmailNachricht", it)
             }
 
-        } catch (e: Exception) {
-            Log.e("Error", e.toString())
+        } catch (e: UserRecoverableAuthIOException) {
+            Log.e("Fehler", e.toString())
+            startActivityForResult(e.intent, REQUEST_ACCOUNT_PICKER)
         }
     }
 
@@ -142,6 +158,3 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
-
-
-
