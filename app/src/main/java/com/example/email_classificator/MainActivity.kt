@@ -4,122 +4,80 @@ import android.accounts.AccountManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Base64
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.email_classificator.Utils.Companion.PREF_ACCOUNT_NAME
 import com.example.email_classificator.Utils.Companion.REQUEST_ACCOUNT_PICKER
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
-import com.google.api.client.extensions.android.http.AndroidHttp
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.example.email_classificator.databinding.ActivityMainBinding
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
-import com.google.api.client.json.JsonFactory
-import com.google.api.client.json.jackson2.JacksonFactory
-import com.google.api.client.util.ExponentialBackOff
-import com.google.api.services.gmail.Gmail
-import com.google.api.services.gmail.GmailScopes
-import com.google.api.services.gmail.model.Message
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.tensorflow.lite.task.text.nlclassifier.BertNLClassifier
-import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.*
 
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var mCredential: GoogleAccountCredential
+    private lateinit var mainViewModel: MainViewModel
 
-    private val scopes = arrayOf(
-        GmailScopes.GMAIL_LABELS,
-        GmailScopes.GMAIL_COMPOSE,
-        GmailScopes.GMAIL_INSERT,
-        GmailScopes.GMAIL_MODIFY,
-        GmailScopes.GMAIL_READONLY,
-        GmailScopes.MAIL_GOOGLE_COM
-    )
+    private lateinit var binding: ActivityMainBinding
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+
+        mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
         //Task library currently only support the default seq_len value (128)
 
         //MaxSeqLen has been added to the Java/Swift(will be available tomorrow externally) API
 
-//        val test = BertNLClassifier.BertNLClassifierOptions.builder().setMaxSeqLen(512).build()
-//
-//        val classifier =
-//            BertNLClassifier.createFromFileAndOptions(applicationContext, "model.tflite", test)
-//
-//        val result =
-//            classifier.classify("Today is the winter celebration. We hope that many will take part and prepare beautiful presentations. We look forward to the coming year and the success of our company. Interviews are already prepared. We are expanding for next year and would like to increase the number of employees.")
-//        Log.i("RESULT", result.toString())
+        mainViewModel.prepareBERTClassifier(applicationContext)
 
-        init()
-
+        mainViewModel.startAuthentication(applicationContext)
         chooseAccount()
     }
 
-    private fun init() {
-        mCredential = GoogleAccountCredential.usingOAuth2(
-            applicationContext, scopes.toList()
-        ).setBackOff(ExponentialBackOff())
-    }
 
     private fun chooseAccount() {
         startActivityForResult(
-            mCredential.newChooseAccountIntent(),
+            mainViewModel.mCredential.newChooseAccountIntent(),
             REQUEST_ACCOUNT_PICKER
         )
-
     }
 
-    private fun getResultsFromApi() {
-        if (!isGooglePlayServicesAvailable()) {
-            acquireGooglePlayServices()
+    private fun processAll() {
+        if (!mainViewModel.isGooglePlayServicesAvailable(applicationContext)) {
+            mainViewModel.acquireGooglePlayServices(applicationContext)
         } else {
-            CoroutineScope(Dispatchers.IO).launch {
-                makeRequest()
+            GlobalScope.launch(Dispatchers.IO) {
+                val data = getData()
+                withContext(Dispatchers.Main) {
+                    val recyclerviewItemAdapter = RecyclerviewItemAdapter(data)
+                    val recyclerView = binding.recyclerEmailCardView
+                    recyclerView.setHasFixedSize(true)
+                    val layoutManager: RecyclerView.LayoutManager =
+                        LinearLayoutManager(applicationContext)
+                    recyclerView.layoutManager = layoutManager
+                    recyclerView.itemAnimator = DefaultItemAnimator()
+                    recyclerView.adapter = recyclerviewItemAdapter
+                }
             }
         }
     }
 
-    private fun makeRequest() {
-        val transport = AndroidHttp.newCompatibleTransport()
-        val jsonFactory: JsonFactory =
-            JacksonFactory.getDefaultInstance()
-        val mService = Gmail.Builder(
-            transport, jsonFactory, mCredential
-        ).setApplicationName(resources.getString(R.string.app_name)).build()
-
+    private fun getData(): List<CardItem> {
         try {
-            val response = mService.users().messages().list("me").execute()
-            val messageListBase64 = response.messages
-            val messageList = messageListBase64.mapNotNull {
-                try {
-                    convertFromBase64ToString(
-                        mService.users().messages().get("me", it.id).execute()
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            messageList.forEach {
-                Log.i("EmailNachricht", it)
-            }
-
+            return mainViewModel.makeGmailAPIRequest()
         } catch (e: UserRecoverableAuthIOException) {
             Log.e("Fehler", e.toString())
             startActivityForResult(e.intent, REQUEST_ACCOUNT_PICKER)
         }
-    }
-
-    private fun convertFromBase64ToString(message: Message): String {
-        val data: ByteArray = Base64.decode(message.payload.parts[0].body.data, Base64.DEFAULT)
-        return String(data, StandardCharsets.UTF_8)
+        return emptyList()
     }
 
     override fun onActivityResult(
@@ -135,25 +93,11 @@ class MainActivity : AppCompatActivity() {
                 val editor = settings.edit()
                 editor.putString(PREF_ACCOUNT_NAME, accountName)
                 editor.apply()
-                mCredential.selectedAccountName = accountName
-                getResultsFromApi()
+                mainViewModel.mCredential.selectedAccountName = accountName
+                processAll()
 
             }
             else -> Log.i("Error", "Something went wrong")
-        }
-    }
-
-    private fun isGooglePlayServicesAvailable(): Boolean {
-        val apiAvailability = GoogleApiAvailability.getInstance()
-        val connectionStatusCode = apiAvailability.isGooglePlayServicesAvailable(this)
-        return connectionStatusCode == ConnectionResult.SUCCESS
-    }
-
-    private fun acquireGooglePlayServices() {
-        val apiAvailability = GoogleApiAvailability.getInstance()
-        val connectionStatusCode = apiAvailability.isGooglePlayServicesAvailable(this)
-        if (apiAvailability.isUserResolvableError(connectionStatusCode)) {
-            Log.i("ErrorGooglePlayServices", connectionStatusCode.toString())
         }
     }
 
