@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity() {
         if (!mainViewModel.isGooglePlayServicesAvailable(applicationContext)) {
             mainViewModel.acquireGooglePlayServices(applicationContext)
         } else {
+            binding.progressBar.visibility = View.VISIBLE
             GlobalScope.launch(Dispatchers.IO) {
                 val data = getData()
                 withContext(Dispatchers.Main) {
@@ -88,6 +90,7 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_ACCOUNT_PICKER -> if (resultCode == RESULT_OK && data != null && data.extras != null) {
+
                 val accountName: String? = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
                 val settings = getPreferences(Context.MODE_PRIVATE)
                 val editor = settings.edit()

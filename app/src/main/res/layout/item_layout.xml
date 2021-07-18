@@ -19,6 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:textStyle="bold"
-        tools:text="TestResult" />
+        tools:text="TestResult"
+        android:layout_marginBottom="20dp"/>
 
 </LinearLayout>

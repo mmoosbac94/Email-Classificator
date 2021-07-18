@@ -55,7 +55,7 @@ class MainViewModel : ViewModel() {
     fun makeGmailAPIRequest(): List<CardItem> {
         val gmailService = createGmailService()
         val response = gmailService.users().messages().list("me").execute()
-        val messageListBase64 = response.messages
+        val messageListBase64 = response.messages.take(5)
         val messageList = getMessageList(messageListBase64, gmailService)
 
         return messageList.map {
