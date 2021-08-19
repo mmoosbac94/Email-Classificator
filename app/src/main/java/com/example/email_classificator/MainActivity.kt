@@ -33,9 +33,7 @@ class MainActivity : AppCompatActivity() {
 
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
-        //Task library currently only support the default seq_len value (128)
-
-        //MaxSeqLen has been added to the Java/Swift(will be available tomorrow externally) API
+        //MaxSeqLen has been added to the Java/Swift API
 
         mainViewModel.prepareBERTClassifier(applicationContext)
 

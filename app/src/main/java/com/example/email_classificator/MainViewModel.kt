@@ -58,11 +58,15 @@ class MainViewModel : ViewModel() {
         val messageListBase64 = response.messages.take(5)
         val messageList = getMessageList(messageListBase64, gmailService)
 
+        return createCardItems(messageList)
+    }
+
+
+    private fun createCardItems(messageList: List<String>): List<CardItem> {
         return messageList.map {
             val result = classifier.classify(it).toString()
             CardItem(it, result)
         }
-
     }
 
     private fun getMessageList(
@@ -87,7 +91,7 @@ class MainViewModel : ViewModel() {
         classifier =
             BertNLClassifier.createFromFileAndOptions(
                 context,
-                "model.tflite",
+                "model_new.tflite",
                 bertNLClassifier
             )
     }
