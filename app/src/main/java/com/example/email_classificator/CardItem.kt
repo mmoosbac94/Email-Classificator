@@ -1,5 +1,5 @@
 package com.example.email_classificator
 
-data class CardItem(val message: String, val result: String)
+import org.tensorflow.lite.support.label.Category
 
-//data class Result(val personalResult: Int, val nonPersonalResult: Int)
+data class CardItem(val message: String, val categoryList: List<Category>)

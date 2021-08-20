@@ -64,8 +64,8 @@ class MainViewModel : ViewModel() {
 
     private fun createCardItems(messageList: List<String>): List<CardItem> {
         return messageList.map {
-            val result = classifier.classify(it).toString()
-            CardItem(it, result)
+            val categoryList = classifier.classify(it)
+            CardItem(it, categoryList)
         }
     }
 

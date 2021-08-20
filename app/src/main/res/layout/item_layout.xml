@@ -24,16 +24,54 @@
 
             <TextView
                 android:id="@+id/messageText"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 tools:text="TestMessage" />
 
-            <TextView
-                android:id="@+id/resultText"
+
+            <LinearLayout
+                android:id="@+id/non_personal_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textStyle="bold"
-                tools:text="TestResult" />
+                android:layout_marginTop="30dp"
+                android:layout_marginBottom="20dp"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:id="@+id/label_non_personal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/score_non_personal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/personal_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:id="@+id/label_personal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/score_personal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
 
         </LinearLayout>
 
