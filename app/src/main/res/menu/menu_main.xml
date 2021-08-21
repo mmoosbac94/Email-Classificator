@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="example.javatpoint.com.kotlinoptionsmenu.MainActivity">
+    <item
+        android:id="@+id/options_menu_personal"
+        android:title="@string/options_menu_personal" />
+    <item
+        android:id="@+id/options_menu_non_personal"
+        android:title="@string/options_menu_non_personal" />
+    <item
+        android:id="@+id/options_menu_all_mails"
+        android:title="@string/options_menu_all_emails" />
+</menu>

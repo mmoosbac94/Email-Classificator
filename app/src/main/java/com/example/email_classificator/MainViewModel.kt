@@ -5,6 +5,7 @@ import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.email_classificator.Utils.Companion.scopes
+import com.example.email_classificator.extensions.convertToRoundedInt
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.extensions.android.http.AndroidHttp
@@ -21,6 +22,8 @@ class MainViewModel : ViewModel() {
 
     lateinit var mCredential: GoogleAccountCredential
     private lateinit var classifier: BertNLClassifier
+
+    lateinit var data: List<CardItem>
 
     fun isGooglePlayServicesAvailable(context: Context): Boolean {
         val apiAvailability = GoogleApiAvailability.getInstance()
@@ -52,13 +55,12 @@ class MainViewModel : ViewModel() {
         ).build()
     }
 
-    fun makeGmailAPIRequest(): List<CardItem> {
+    fun makeGmailAPIRequest() {
         val gmailService = createGmailService()
         val response = gmailService.users().messages().list("me").execute()
         val messageListBase64 = response.messages.take(5)
         val messageList = getMessageList(messageListBase64, gmailService)
-
-        return createCardItems(messageList)
+        data = createCardItems(messageList)
     }
 
 
@@ -102,4 +104,17 @@ class MainViewModel : ViewModel() {
     }
 
 
+    fun getOnlyPersonalMails(cardItems: List<CardItem> = data): List<CardItem> {
+        return cardItems.filter {
+            it.categoryList[0].score.convertToRoundedInt() < it.categoryList[1].score.convertToRoundedInt()
+        }
+    }
+
+    fun getOnlyNonPersonalMails(cardItems: List<CardItem> = data): List<CardItem> {
+        return cardItems.filter {
+            it.categoryList[0].score.convertToRoundedInt() > it.categoryList[1].score.convertToRoundedInt()
+        }
+    }
 }
+
+

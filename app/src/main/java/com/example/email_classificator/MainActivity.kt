@@ -3,8 +3,11 @@ package com.example.email_classificator
 import android.accounts.AccountManager
 import android.content.Context
 import android.content.Intent
+import android.opengl.Visibility
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +30,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    private lateinit var recyclerviewItemAdapter: RecyclerviewItemAdapter
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
-        //MaxSeqLen has been added to the Java/Swift API
+        setupRecyclerView()
 
         mainViewModel.prepareBERTClassifier(applicationContext)
 
@@ -43,6 +48,46 @@ class MainActivity : AppCompatActivity() {
         chooseAccount()
     }
 
+    private fun setupRecyclerView() {
+        val recyclerView = binding.recyclerEmailCardView
+        recyclerView.setHasFixedSize(true)
+        val layoutManager: RecyclerView.LayoutManager =
+            LinearLayoutManager(applicationContext)
+
+        recyclerView.layoutManager = layoutManager
+        recyclerView.itemAnimator = DefaultItemAnimator()
+
+        recyclerviewItemAdapter = RecyclerviewItemAdapter(emptyList())
+        recyclerView.adapter = recyclerviewItemAdapter
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.options_menu_personal -> {
+                val listPersonalMails = mainViewModel.getOnlyPersonalMails()
+                recyclerviewItemAdapter.itemList = listPersonalMails
+                recyclerviewItemAdapter.notifyDataSetChanged()
+                true
+            }
+            R.id.options_menu_non_personal -> {
+                val listNonPersonalMails = mainViewModel.getOnlyNonPersonalMails()
+                recyclerviewItemAdapter.itemList = listNonPersonalMails
+                recyclerviewItemAdapter.notifyDataSetChanged()
+                true
+            }
+            R.id.options_menu_all_mails -> {
+                recyclerviewItemAdapter.itemList = mainViewModel.data
+                recyclerviewItemAdapter.notifyDataSetChanged()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
 
     private fun chooseAccount() {
         startActivityForResult(
@@ -57,29 +102,14 @@ class MainActivity : AppCompatActivity() {
         } else {
             binding.progressBar.visibility = View.VISIBLE
             GlobalScope.launch(Dispatchers.IO) {
-                val data = getData()
+                mainViewModel.makeGmailAPIRequest()
                 withContext(Dispatchers.Main) {
-                    val recyclerviewItemAdapter = RecyclerviewItemAdapter(data)
-                    val recyclerView = binding.recyclerEmailCardView
-                    recyclerView.setHasFixedSize(true)
-                    val layoutManager: RecyclerView.LayoutManager =
-                        LinearLayoutManager(applicationContext)
-                    recyclerView.layoutManager = layoutManager
-                    recyclerView.itemAnimator = DefaultItemAnimator()
-                    recyclerView.adapter = recyclerviewItemAdapter
+                    binding.progressBar.visibility = View.INVISIBLE
+                    recyclerviewItemAdapter.itemList = mainViewModel.data
+                    recyclerviewItemAdapter.notifyDataSetChanged()
                 }
             }
         }
-    }
-
-    private fun getData(): List<CardItem> {
-        try {
-            return mainViewModel.makeGmailAPIRequest()
-        } catch (e: UserRecoverableAuthIOException) {
-            Log.e("Fehler", e.toString())
-            startActivityForResult(e.intent, REQUEST_ACCOUNT_PICKER)
-        }
-        return emptyList()
     }
 
     override fun onActivityResult(

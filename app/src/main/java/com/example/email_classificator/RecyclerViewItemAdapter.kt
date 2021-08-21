@@ -1,7 +1,6 @@
 package com.example.email_classificator
 
 import android.graphics.Color
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,9 +11,8 @@ import com.example.email_classificator.extensions.convertToRoundedInt
 import com.example.email_classificator.extensions.convertToRoundedPercentageAsString
 
 
-class RecyclerviewItemAdapter(mItemList: List<CardItem>) :
+class RecyclerviewItemAdapter(var itemList: List<CardItem>) :
     RecyclerView.Adapter<RecyclerviewItemAdapter.MyViewHolder>() {
-    private val cardItemsList: List<CardItem> = mItemList
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         val view: View =
             LayoutInflater.from(parent.context).inflate(R.layout.item_layout, parent, false)
@@ -23,7 +21,7 @@ class RecyclerviewItemAdapter(mItemList: List<CardItem>) :
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        val cardItem: CardItem = cardItemsList[position]
+        val cardItem: CardItem = itemList[position]
 
         holder.message.text = cardItem.message
         holder.labelNonPersonal.text = cardItem.categoryList[0].label
@@ -45,7 +43,7 @@ class RecyclerviewItemAdapter(mItemList: List<CardItem>) :
     }
 
     override fun getItemCount(): Int {
-        return cardItemsList.size
+        return itemList.size
     }
 
     inner class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
